@@ -91,13 +91,40 @@
               {{ t('all') }}
             </el-checkbox-button>
             <el-checkbox-group v-model="filters.isaMarch.selected" @change="handleFilterChange('isaMarch')">
-              <el-checkbox-button
-                  v-for="item in isaMarch"
-                  :key="item.profile"
-                  :value="item.profile"
+              <el-dropdown
+                v-for="group in groupedIsaMarch"
+                :key="group.letter"
+                trigger="click"
+                :hide-on-click="false"
+                class="group-dropdown-wrapper"
               >
-                {{ item.profile }}
-              </el-checkbox-button>
+                <template #default>
+                  <div
+                    class="el-checkbox-button group-dropdown-btn"
+                    :class="{ 'is-checked': isGroupChecked(group) }"
+                  >
+                    <div class="el-checkbox-button__inner">
+                      {{ group.letter }}
+                    </div>
+                  </div>
+                </template>
+                <template #dropdown>
+                  <div class="group-dropdown-menu">
+                    <el-checkbox-group
+                      v-model="filters.isaMarch.selected"
+                      @change="handleFilterChange('isaMarch')"
+                    >
+                      <el-checkbox
+                        v-for="item in group.children"
+                        :key="item.profile"
+                        :value="item.profile"
+                      >
+                        {{ item.profile }}
+                      </el-checkbox>
+                    </el-checkbox-group>
+                  </div>
+                </template>
+              </el-dropdown>
             </el-checkbox-group>
           </div>
         </el-main>
@@ -132,6 +159,7 @@
 
 <script setup>
 import { useI18n } from "vue-i18n";
+import { computed, reactive, ref } from 'vue';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -170,8 +198,22 @@ const props = defineProps({
       userspace: { label: '预装列表', options: [] },
       installer: { label: '引导器', options: [] }
     })
+  },
+  groupedIsaMarch: {
+    type: Array,
+    default: () => []
   }
 });
+
+const expanded = reactive({});
+function toggleExpand(letter) {
+  expanded[letter] = !expanded[letter];
+}
+
+function isGroupChecked(group) {
+  // 判断该分组下是否有 profile 被选中
+  return group.children.some(item => props.filters.isaMarch.selected.includes(item.profile));
+}
 
 const updateCheckState = (key) => {
   const filter = props.filters[key];
@@ -229,6 +271,30 @@ const handleFilterCheckAll = (key) => {
 const handleFilterChange = (key) => {
   updateCheckState(key);
 };
+
+const groupedIsaMarch = computed(() => {
+  // 1. 先去重
+  const unique = Array.from(new Set(props.isaMarch.map(i => i.profile)))
+    .map(profile => props.isaMarch.find(i => i.profile === profile));
+  // 2. 分组
+  const groups = {};
+  unique.forEach(item => {
+    const first = item.profile[0].toUpperCase();
+    if (!groups[first]) groups[first] = [];
+    groups[first].push(item);
+  });
+  // 3. 排序
+  const sortedKeys = Object.keys(groups).sort();
+  // 4. 每组内排序
+  sortedKeys.forEach(k => {
+    groups[k].sort((a, b) => a.profile.localeCompare(b.profile, 'en', { sensitivity: 'base' }));
+  });
+  // 5. 返回分组后的数组
+  return sortedKeys.map(letter => ({
+    letter,
+    children: groups[letter]
+  }));
+});
 </script>
 
 <style scoped>
@@ -246,7 +312,7 @@ const handleFilterChange = (key) => {
   border-radius: 5px !important;
   background: var(--theme-input) !important;
   color: var(--theme-text) !important;
-  border: clamp(1px, 0.2vw, 2px) solid var(--theme-border) !important;
+  /* border: clamp(1px, 0.2vw, 2px) solid var(--theme-border) !important; */
   transition: all 0.2s;
   white-space: nowrap;
   overflow: visible;
@@ -290,6 +356,74 @@ const handleFilterChange = (key) => {
   background: var(--theme-hover) !important;
   border-color: var(--el-color-primary) !important;
   color: var(--el-color-primary) !important;
+}
+
+.group-dropdown-btn {
+  margin-right: 12px;
+  min-width: 60px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 5px !important;
+  background: var(--theme-input) !important;
+  color: var(--theme-text) !important;
+  /* border: clamp(1px, 0.2vw, 2px) solid var(--theme-border) !important; */
+  transition: all 0.2s;
+  height: 36px;
+  box-sizing: border-box;
+}
+.group-dropdown-btn .el-checkbox-button__inner {
+  font-size: 14px;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  border-radius: 5px !important;
+  background: var(--theme-input) !important;
+  color: var(--theme-text) !important;
+  border: clamp(1px, 0.2vw, 2px) solid var(--theme-border) !important;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: visible;
+  padding: 8px 16px;
+  min-width: 80px;
+  height: 36px;
+  line-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.group-dropdown-btn.is-checked .el-checkbox-button__inner {
+  background: var(--theme-hover) !important;
+  color: var(--el-color-primary) !important;
+  border: clamp(1px, 0.2vw, 2px) solid var(--el-color-primary) !important;
+  font-weight: 500;
+}
+.group-dropdown-btn:hover .el-checkbox-button__inner {
+  background: var(--theme-hover) !important;
+  border-color: var(--el-color-primary) !important;
+  color: var(--el-color-primary) !important;
+}
+.group-dropdown-wrapper {
+  display: inline-block;
+}
+
+.group-dropdown-menu {
+  padding: 8px 0;
+  min-width: 140px;
+}
+.group-dropdown-menu .el-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+}
+.group-dropdown-menu .el-checkbox {
+  width: 100%;
+  margin: 0;
+  padding: 0 16px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
 @media screen and (max-width: 900px) {

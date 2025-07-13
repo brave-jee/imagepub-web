@@ -43,6 +43,7 @@ if (process.env.NODE_ENV !== 'development') {
 }
 
 const i18n = createI18n({
+    legacy: false, // 强制使用 Composition API 模式
     locale: detectLang(),
     messages
 });

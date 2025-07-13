@@ -6,41 +6,24 @@
     <div v-if="isDataLoaded" class="box-card">
       <div style="width: 100%">
         <el-tabs v-model="activeTab1" class="top-tabs">
-          <el-tab-pane
-              v-for="(osItem, osIndex) in osList"
-              :key="osIndex"
-              :label="osItem.name"
-              :name="osItem.name"
-          >
+          <el-tab-pane v-for="(osItem, osIndex) in osList" :key="osIndex" :label="osItem.name" :name="osItem.name">
             <el-tabs v-model="activeTab2" class="sub-tabs" type="border-card">
-              <el-tab-pane
-                  v-for="(release, releaseIndex) in getReleases(osItem)"
-                  :key="releaseIndex"
-                  :label="release.name"
-                  :name="release.name"
-              >
+              <el-tab-pane v-for="(release, releaseIndex) in getReleases(osItem)" :key="releaseIndex"
+                :label="release.name" :name="release.name">
                 <h2 class="title">{{ release.name }}</h2>
                 <p class="description">
                   {{ getSuiteDescription(release) || '' }}
                 </p>
-                <BoardFilter
-                    :filters="filters"
-                    :kernelVersions="getKernelVersions(release)"
-                    :kernelOptions="getKernelOptions(release)"
-                    :isaMabi = "getIsaMabi(release)"
-                    :isaMarch = "getIsaMarch(release)"
-                    :otherFilters="{
+                <BoardFilter :filters="filters" :kernelVersions="getKernelVersions(release)"
+                  :kernelOptions="getKernelOptions(release)" :isaMabi="getIsaMabi(release)"
+                  :isaMarch="getIsaMarch(release)" :otherFilters="{
                     userspace: { label: t('preInstalledList'), options: getUserspaces(release) },
                     installer: { label: t('bootLoader'), options: getInstallerTypes(release) }
-                  }"
-                ></BoardFilter>
-                <BoardDescription
-                    v-if="boardDetail && boardDetail.imagesuites"
-                    :title="release.name"
-                    :description="getSuiteDescription(release)"
-                    :historyVersions="release.imagesuites?.flatMap(suite => suite.revisions || []) || []"
-                :open-image="openImage"
-                >
+                  }"></BoardFilter>
+                <BoardDescription v-if="boardDetail && boardDetail.imagesuites" :title="release.name"
+                  :description="getSuiteDescription(release)"
+                  :historyVersions="release.imagesuites?.flatMap(suite => suite.revisions || []) || []"
+                  :open-image="openImage">
                 </BoardDescription>
               </el-tab-pane>
             </el-tabs>
@@ -124,23 +107,23 @@ const openImage = async (row) => {
 
 // 动态获取一级Tab列表
 const osList = computed(() =>
-    boardDetail.value.imagesuites?.map(osItem => ({
-      name: osItem.name,
-      releases: osItem.releases
-    })) || []
+  boardDetail.value.imagesuites?.map(osItem => ({
+    name: osItem.name,
+    releases: osItem.releases
+  })) || []
 );
 
 // 辅助函数：获取对应OS的releases列表
 const getReleases = (osItem) => osItem.releases || [];
 
-const getKernelOptions = ()=>{
+const getKernelOptions = () => {
   const currentOs = boardDetail.value.imagesuites?.find(os => os.name === activeTab1.value);
   const currentRelease = currentOs?.releases?.find(release => release.name === activeTab2.value);
   if (!currentRelease?.imagesuites) return [];
 
   return currentRelease.imagesuites
-      .filter(suite => suite.kernel?.type)
-      .flatMap(suite => [{ version: suite.kernel.type }]);
+    .filter(suite => suite.kernel?.type)
+    .flatMap(suite => [{ version: suite.kernel.type }]);
 };
 
 const getSuiteDescription = () => {
@@ -155,8 +138,8 @@ const getKernelVersions = () => {
   if (!currentRelease?.imagesuites) return [];
 
   return currentRelease.imagesuites
-      .filter(suite => suite.kernel?.version)
-      .flatMap(suite => [{ version: suite.kernel.version }]);
+    .filter(suite => suite.kernel?.version)
+    .flatMap(suite => [{ version: suite.kernel.version }]);
 };
 
 
@@ -168,7 +151,6 @@ const getIsaMabi = () => {
   return currentRelease.imagesuites.flatMap((suite, suiteIndex) => {
     const isa = suite.isa;
     if (!isa || !isa.mabi) return [];
-    console.log("isa.mabi", isa.mabi);
     return {
       id: `${suiteIndex}-${0}`,
       profile: isa.mabi
@@ -199,8 +181,8 @@ const getUserspaces = () => {
     const userSpaceList = suite.userspace;
     if (!userSpaceList) return [];
     return Array.isArray(userSpaceList)
-        ? userSpaceList.map((space, spaceIndex) => ({ id: `${index}-${spaceIndex}`, userspace: space }))
-        : [{ id: `${index}-0`, userspace: userSpaceList }];
+      ? userSpaceList.map((space, spaceIndex) => ({ id: `${index}-${spaceIndex}`, userspace: space }))
+      : [{ id: `${index}-0`, userspace: userSpaceList }];
   });
 };
 
@@ -210,7 +192,7 @@ const getInstallerTypes = () => {
   if (!currentRelease?.imagesuites) return [];
 
   return [...new Set(
-      currentRelease.imagesuites.map(s => s.loader?.[0]).filter(Boolean)
+    currentRelease.imagesuites.map(s => s.loader?.[0]).filter(Boolean)
   )];
 };
 
